@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mycobacterium Knockdown Intelligence | Mtb &amp; M. smegmatis</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="title-area">
+          <h1>🔬 Mycobacterium Knockdown Target Discovery</h1>
+          <p class="subtitle">
+            Controlled-vocabulary target exploration for <i>M. tuberculosis</i> (H37Rv) &amp; <i>M. smegmatis</i> (MC2 155). 
+            Gated by <b>PEBBLE essentiality</b>, linked to <b>Mycobrowser</b>, and synthesized by <b>Gemini 3.8 Flash</b>.
+          </p>
+        </div>
+        <div class="header-actions">
+          <button id="apiKeyBtn" class="btn btn-secondary">
+            <span class="status-dot" id="apiStatusDot"></span>
+            <span id="apiKeyBtnText">Gemini API Key</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Uni Basel Banner -->
+      <div class="unibas-banner">
+        <strong>🎓 University of Basel Institutional Access:</strong> 
+        Connect to <code>vpn.unibas.ch</code> via GlobalProtect VPN (or authenticate with SWITCH edu-ID) to access full-text <i>Nature</i>, <i>Science</i>, and <i>Cell</i> papers directly via DOI links.
+      </div>
+    </header>
+
+    <!-- STEP 1: Controlled Vocabulary - Cellular Pathways (Pills) -->
+    <section class="section-card">
+      <div class="section-header">
+        <span class="step-badge">Step 1</span>
+        <h2>Pick Cellular Pathway or Target Mechanism</h2>
+        <span class="helper-text">Click a pre-vetted biological concept to eliminate spelling errors.</span>
+      </div>
+      
+      <div class="pathway-categories" id="pathwayCategories">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+      <div class="pathway-info-card" id="pathwayInfoCard" style="display:none;"></div>
+    </section>
+
+    <!-- STEP 2: Wet-Lab Hard Constraints & Filters -->
+    <section class="section-card constraints-bar">
+      <div class="section-header">
+        <span class="step-badge">Step 2</span>
+        <h2>Wet-Lab Hard Constraints &amp; Filters (0 API Tokens)</h2>
+        <span class="helper-text">Every gene is automatically paired with its optimal antibiotic. Use filters to narrow by phenotype, score, or drug.</span>
+      </div>
+      
+      <div class="constraints-controls">
+        <label class="toggle-control" title="Ensure target has an ortholog in M. smegmatis for fast BSL-1 pilot testing">
+          <input type="checkbox" id="requireSmegmatisToggle" checked />
+          <span class="toggle-slider"></span>
+          <span class="toggle-label"><b>Require <i>M. smegmatis</i> Ortholog</b> (BSL-1 Pilot Ready)</span>
+        </label>
+
+        <div class="select-control">
+          <label for="pebbleFilterSelect"><b>PEBBLE Essentiality Gate:</b></label>
+          <select id="pebbleFilterSelect">
+            <option value="exclude_strict_lethal" selected>Exclude Strict Lethals (Recommended for Synergy)</option>
+            <option value="all">All Calls (No Filter)</option>
+            <option value="vulnerable">Vulnerable Only (High-Confidence CRISPRi)</option>
+            <option value="non_essential">Non-Essential Only</option>
+            <option value="essential">Essential Only</option>
+          </select>
+        </div>
+
+        <div class="select-control">
+          <label for="scoreFilterSelect"><b>AI Synergy Score:</b></label>
+          <select id="scoreFilterSelect">
+            <option value="all" selected>All Scores (1–10)</option>
+            <option value="score_8">Score ≥ 8 (Top Synergy Champions)</option>
+            <option value="score_7">Score ≥ 7 (High Confidence)</option>
+          </select>
+        </div>
+
+        <div class="select-control">
+          <label for="drugFilterSelect"><b>Target Antibiotic:</b></label>
+          <select id="drugFilterSelect">
+            <option value="all" selected>All Antibiotics (Auto-Paired)</option>
+            <option value="meropenem">Meropenem / Beta-Lactams</option>
+            <option value="isoniazid">Isoniazid (INH)</option>
+            <option value="rifampicin">Rifampicin (RIF)</option>
+            <option value="bedaquiline">Bedaquiline (BDQ)</option>
+            <option value="moxifloxacin">Moxifloxacin (MFX)</option>
+            <option value="linezolid">Linezolid (LZD)</option>
+            <option value="clofazimine">Clofazimine (CFZ)</option>
+            <option value="ethambutol">Ethambutol (EMB)</option>
+            <option value="telacebec">Telacebec (Q203)</option>
+            <option value="amikacin">Amikacin (AMK)</option>
+            <option value="clarithromycin">Clarithromycin (CLR)</option>
+            <option value="doxycycline">Doxycycline (DOX)</option>
+            <option value="pas">Para-aminosalicylic acid (PAS)</option>
+          </select>
+        </div>
+
+        <div class="quick-search-control">
+          <label for="optionalGeneSearch"><b>Filter / Search Matrix:</b></label>
+          <input type="text" id="optionalGeneSearch" placeholder="Type gene, Rv, function, drug, or author (e.g. katG, Wakamoto)..." />
+        </div>
+      </div>
+    </section>
+
+    <!-- Results Table Section -->
+    <section class="section-card" id="resultsSection">
+      <div class="table-header-area">
+        <div>
+          <h2>Candidate Target Matrix (<span id="candidateCount">0</span> genes)</h2>
+          <p class="section-subtext" id="matrixSubtext">Showing candidate genes with recommended antibiotics, peer-reviewed landmark papers, and AI viability scores.</p>
+        </div>
+        <div class="table-actions">
+          <button id="showAllGenesBtn" class="btn btn-secondary">🌐 Show All 147 Genes</button>
+          <button id="exportCsvBtn" class="btn btn-outline">📥 Export CSV</button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table" id="candidateTable">
+          <thead>
+            <tr>
+              <th style="min-width: 150px;">Gene &amp; Locus</th>
+              <th style="min-width: 170px;">Recommended Antibiotic</th>
+              <th style="min-width: 260px;">Function &amp; Phenotype</th>
+              <th style="min-width: 320px;">Landmark Scientific Paper</th>
+              <th style="min-width: 220px;">AI Viability &amp; Guide Advice</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="candidateTableBody">
+            <!-- Rendered by app.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- STAGE 2: AI Knockdown & Synergy Evaluator -->
+    <section class="section-card agent-section" id="agentSection" style="display: none;">
+      <div class="agent-header">
+        <div class="agent-title">
+          <span class="agent-icon">🤖</span>
+          <div>
+            <h2>Gemini 3.8 Flash Knockdown Evaluator</h2>
+            <p>Target: <b id="agentTargetGene">-</b> | Antibiotic: <b id="agentTargetDrug">-</b></p>
+          </div>
+        </div>
+        <div>
+          <button id="runAgentBtn" class="btn btn-primary">🧠 Re-evaluate with AI Agent</button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="agentLoading" class="agent-loading" style="display:none;">
+        <div class="spinner"></div>
+        <p>Gemini 3.8 Flash is deep-reading scientific publications, evaluating standalone tolerance, and scoring antibiotic synergy...</p>
+      </div>
+
+      <!-- Scorecard Display -->
+      <div id="agentScorecardContainer" class="scorecard-container" style="display:none;">
+        <div class="scorecard-topbar">
+          <div class="scorecard-badge" id="scorecardBadge">Score: - / 10</div>
+          <div class="scorecard-verdict" id="scorecardVerdict">-</div>
+        </div>
+        <div class="scorecard-body" id="scorecardBody">
+          <!-- Rendered Markdown -->
+        </div>
+
+        <!-- Follow-up Q&A -->
+        <div class="qa-container">
+          <h3>💬 Ask a Follow-up Question Directly to These Papers</h3>
+          <div class="qa-input-row">
+            <input type="text" id="qaInput" placeholder="e.g., What was the exact fold-reduction in MIC? Was this tested in macrophages?" />
+            <button id="qaSendBtn" class="btn btn-secondary">Ask Agent</button>
+          </div>
+          <div id="qaResponse" class="qa-response" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- Supporting Literature Cards -->
+      <div class="papers-container" id="papersContainer">
+        <h3>📚 Supporting Scientific Publications</h3>
+        <div id="papersList" class="papers-list">
+          <!-- Rendered by app.js -->
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- API Key Modal -->
+  <dialog id="apiKeyModal" class="modal">
+    <div class="modal-box">
+      <h3>🔑 Configure Google Gemini API</h3>
+      <p>Enter your Gemini API key to enable autonomous literature reading, phenotype scoring, and paper Q&amp;A. Your key stays in your browser's local storage.</p>
+      <input type="password" id="modalApiKeyInput" placeholder="Enter Gemini API key (e.g. AQ.Ab8...)" />
+      <div class="modal-actions">
+        <button id="saveApiKeyBtn" class="btn btn-primary">Save Key</button>
+        <button id="closeApiKeyBtn" class="btn btn-secondary">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
